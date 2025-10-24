@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berlin Restaurant Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --midnight-charcoal: #1a1a1a;
+            --deep-burgundy: #721121;
+            --champagne-gold: #d4af37;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .brand {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            font-weight: bold;
+            font-size: 28px;
+            color: var(--champagne-gold);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .weights-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: var(--midnight-charcoal);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            border: 1px solid var(--champagne-gold);
+        }
+
+        .weights-panel.active {
+            display: block;
+        }
+
+        .weight-slider {
+            margin: 10px 0;
+        }
+
+        .weight-slider label {
+            display: block;
+            font-size: 12px;
+            color: var(--white);
+            margin-bottom: 3px;
+        }
+
+        .weight-slider input {
+            width: 100%;
+            background: var(--deep-burgundy);
+            border: 1px solid var(--champagne-gold);
+        }
+
+        .weight-slider input::-webkit-slider-thumb {
+            background: var(--champagne-gold);
+        }
+
+        .weight-value {
+            float: right;
+            font-size: 12px;
+            color: var(--champagne-gold);
+        }
+
+        .reset-button {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin-top: 15px;
+            background: var(--deep-burgundy);
+            border: 1px solid var(--soft-gold);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--champagne-gold);
+            transition: all 0.3s ease;
+        }
+
+        .reset-button:hover {
+            background: var(--midnight-charcoal);
+            color: var(--champagne-gold);
+            border-color: var(--champagne-gold);
+        }
+
+        .settings-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            padding: 8px;
+            z-index: 1000;
+            border: none;
+            cursor: pointer;
+            color: var(--midnight-charcoal);
+            transition: all 0.3s ease;
+            font-size: 24px;
+        }
+
+        .settings-button:hover {
+            color: var(--champagne-gold);
+            transform: rotate(45deg);
+        }
+
+        .stars-container {
+            color: #FFD700;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .overall-score {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--deep-burgundy);
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--champagne-gold);
+            color: var(--white);
+        }
+
+        .overall-score .stars-container {
+            font-size: 24px;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100vw;
+            z-index: 1;
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--midnight-charcoal);
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            z-index: 2;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-top: 1px solid var(--champagne-gold);
+        }
+
+        .info-panel.active {
+            transform: translateY(0);
+        }
+
+        .close-button {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--white);
+        }
+
+        .restaurant-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            padding-right: 40px;
+            color: var(--champagne-gold);
+        }
+
+        .restaurant-address {
+            color: var(--white);
+            margin-bottom: 20px;
+        }
+
+        .rating-category {
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--deep-burgundy);
+            padding-bottom: 10px;
+        }
+
+        .rating-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .rating-label span {
+            color: var(--white);
+            font-weight: 500;
+        }
+
+        .rating-label .score {
+            color: var(--champagne-gold);
+        }
+
+        .stars-container {
+            color: var(--champagne-gold);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .stars-container .far.fa-star {
+            color: var(--deep-burgundy);
+        }
+
+        /* All categories use champagne gold for consistency */
+        .wow-factor .stars-container,
+        .atmosphere .stars-container,
+        .service .stars-container,
+        .value .stars-container,
+        .taste .stars-container { 
+            color: var(--champagne-gold); 
+        }
+
+        /* Custom marker styling */
+        .map-pin {
+            text-align: center;
+            color: var(--deep-burgundy);
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+            transition: all 0.3s ease;
+            font-size: 32px;
+            width: 32px;
+            height: 32px;
+            margin-left: -16px;
+            margin-top: -32px;
+            cursor: pointer;
+        }
+
+        .map-pin:hover {
+            color: var(--champagne-gold);
+            transform: scale(1.1);
+            filter: drop-shadow(0 3px 3px rgba(0,0,0,0.4));
+        }
+
+        .map-pin i {
+            text-shadow: 0 0 3px rgba(255,255,255,0.5);
+        }
+
+        @media (min-width: 768px) {
+            .info-panel {
+                width: 400px;
+                left: 20px;
+                right: auto;
+                border-radius: 20px;
+                transform: translateX(-120%);
+            }
+
+            .info-panel.active {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="brand">Diners Club</div>
+    <button class="settings-button" title="Rating Weights"><i class="fas fa-cog"></i></button>
+    <div class="weights-panel">
+        <div class="weight-slider">
+            <label>Wow Factor <span class="weight-value">20%</span></label>
+            <input type="range" min="0" max="100" value="20" step="1" class="weight" data-category="Wow Factor">
+        </div>
+        <div class="weight-slider">
+            <label>Atmosphere <span class="weight-value">20%</span></label>
+            <input type="range" min="0" max="100" value="20" step="1" class="weight" data-category="Atmosphere">
+        </div>
+        <div class="weight-slider">
+            <label>Service <span class="weight-value">20%</span></label>
+            <input type="range" min="0" max="100" value="20" step="1" class="weight" data-category="Service">
+        </div>
+        <div class="weight-slider">
+            <label>Value <span class="weight-value">20%</span></label>
+            <input type="range" min="0" max="100" value="20" step="1" class="weight" data-category="Value">
+        </div>
+        <div class="weight-slider">
+            <label>Taste <span class="weight-value">20%</span></label>
+            <input type="range" min="0" max="100" value="20" step="1" class="weight" data-category="Taste">
+        </div>
+        <button class="reset-button">Reset to Default Weights</button>
+    </div>
+    <div class="info-panel">
+        <button class="close-button">&times;</button>
+        <h2 class="restaurant-name"></h2>
+        <p class="restaurant-address"></p>
+        <div class="overall-score">
+            <h3>Overall Rating</h3>
+            <div class="stars-container"></div>
+            <span class="score-value"></span>
+        </div>
+        <div class="ratings-container"></div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+    <script>
+        // Sample restaurant data for Berlin
+        const restaurants = [
+            {
+                name: "Ari’s",
+                address: "Glogauer Str. 2, 10999 Berlin",
+                coordinates: [52.49475488273261, 13.437700608692097],
+                ratings: {
+                    "Wow Factor": 3.2,
+                    "Atmosphere": 3.4,
+                    "Service": 4.2,
+                    "Value": 3.2,
+                    "Taste": 3.4
+                }
+            },
+            {
+                name: "Chiaia",
+                address: "Linienstraße 113, 10115 Berlin",
+                coordinates: [52.52767956161614, 13.392696368953867],
+                ratings: {
+                    "Wow Factor": 2.5,
+                    "Atmosphere": 3.5,
+                    "Service": 2.75,
+                    "Value": 4.25,
+                    "Taste": 3.5
+                }
+            }
+        ];
+
+        // Initialize map centered on Berlin
+        const map = L.map('map').setView([52.5200, 13.4050], 13);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Custom marker icon class
+        const createCustomIcon = (restaurant) => {
+            return L.divIcon({
+                className: 'map-pin',
+                html: '<i class="fas fa-map-marker-alt"></i>',
+                iconSize: null,
+                iconAnchor: null
+            });
+        };
+
+        // Info panel elements
+        const infoPanel = document.querySelector('.info-panel');
+        const restaurantName = document.querySelector('.restaurant-name');
+        const restaurantAddress = document.querySelector('.restaurant-address');
+        const ratingsContainer = document.querySelector('.ratings-container');
+        const closeButton = document.querySelector('.close-button');
+
+        // Function to create star rating HTML
+        function createStarRating(score) {
+            const fullStars = Math.floor(score);
+            const partialStar = score % 1;
+            const emptyStars = 5 - Math.ceil(score);
+            
+            let html = '';
+            // Full stars
+            for (let i = 0; i < fullStars; i++) {
+                html += '<i class="fas fa-star"></i>';
+            }
+            // Partial star if needed
+            if (partialStar > 0) {
+                html += `<i class="fas fa-star-half-alt"></i>`;
+            }
+            // Empty stars
+            for (let i = 0; i < emptyStars; i++) {
+                html += '<i class="far fa-star"></i>';
+            }
+            return html;
+        }
+
+        // Calculate weighted average
+        function calculateOverallScore(ratings, weights) {
+            let weightedSum = 0;
+            
+            Object.entries(ratings).forEach(([category, score]) => {
+                const weight = weights[category] / 100; // Convert percentage to decimal
+                weightedSum += score * weight;
+            });
+            
+            return weightedSum;
+        }
+
+        // Update weights to ensure they sum to 100%
+        function normalizeWeights(changedSlider) {
+            const sliders = Array.from(document.querySelectorAll('.weight'));
+            const changedValue = parseInt(changedSlider.value);
+            const otherSliders = sliders.filter(slider => slider !== changedSlider);
+            
+            // Calculate how much we need to adjust other sliders
+            const totalOtherWeights = otherSliders.reduce((sum, slider) => sum + parseInt(slider.value), 0);
+            const target = 100 - changedValue;
+            
+            if (totalOtherWeights === 0) {
+                // Distribute remaining weight equally among other sliders
+                const equalWeight = target / otherSliders.length;
+                otherSliders.forEach(slider => {
+                    slider.value = equalWeight;
+                    updateWeightLabel(slider);
+                });
+            } else {
+                // Adjust other weights proportionally
+                const ratio = target / totalOtherWeights;
+                otherSliders.forEach(slider => {
+                    slider.value = Math.round(parseInt(slider.value) * ratio);
+                    updateWeightLabel(slider);
+                });
+            }
+        }
+
+        // Update the weight label to show percentage
+        function updateWeightLabel(slider) {
+            const label = slider.parentElement.querySelector('.weight-value');
+            label.textContent = slider.value + '%';
+        }
+
+        // Function to create rating stars
+        function createRatingBars(ratings) {
+            // Get current weights
+            const weights = {};
+            document.querySelectorAll('.weight').forEach(slider => {
+                weights[slider.dataset.category] = parseInt(slider.value);
+            });
+
+            // Calculate and display overall score
+            const overallScore = calculateOverallScore(ratings, weights);
+            const overallStars = document.querySelector('.overall-score .stars-container');
+            const scoreValue = document.querySelector('.overall-score .score-value');
+            overallStars.innerHTML = createStarRating(overallScore);
+            scoreValue.textContent = overallScore.toFixed(1) + ' / 5';
+
+            // Display individual ratings
+            ratingsContainer.innerHTML = '';
+            Object.entries(ratings).forEach(([category, score]) => {
+                const categoryClass = category.toLowerCase().replace(/ /g, '-');
+                const html = `
+                    <div class="rating-category ${categoryClass}">
+                        <div class="rating-label">
+                            <span>${category}</span>
+                            <div class="stars-container">${createStarRating(score)}</div>
+                        </div>
+                    </div>
+                `;
+                ratingsContainer.innerHTML += html;
+            });
+        }
+
+        // Add markers for each restaurant
+        restaurants.forEach(restaurant => {
+            const marker = L.marker(restaurant.coordinates, {
+                icon: createCustomIcon(restaurant)
+            }).addTo(map)
+              .on('click', () => {
+                    restaurantName.textContent = restaurant.name;
+                    restaurantAddress.textContent = restaurant.address;
+                    createRatingBars(restaurant.ratings);
+                    infoPanel.classList.add('active');
+                });
+        });
+
+        // Close info panel when close button is clicked
+        closeButton.addEventListener('click', () => {
+            infoPanel.classList.remove('active');
+        });
+
+        // Close info panel when clicking outside
+        map.addEventListener('click', (e) => {
+            if (e.originalEvent.target.id === 'map') {
+                infoPanel.classList.remove('active');
+            }
+        });
+
+        // Settings button functionality
+        const settingsButton = document.querySelector('.settings-button');
+        const weightsPanel = document.querySelector('.weights-panel');
+        
+        settingsButton.addEventListener('click', () => {
+            weightsPanel.classList.toggle('active');
+        });
+
+        // Function to reset all weights to 20%
+        function resetWeights() {
+            document.querySelectorAll('.weight').forEach(slider => {
+                slider.value = 20;
+                updateWeightLabel(slider);
+            });
+            
+            // Update display if restaurant info is showing
+            if (infoPanel.classList.contains('active')) {
+                const currentName = document.querySelector('.restaurant-name').textContent;
+                const restaurant = restaurants.find(r => r.name === currentName);
+                if (restaurant) {
+                    createRatingBars(restaurant.ratings);
+                }
+            }
+        }
+
+        // Weight sliders functionality
+        document.querySelectorAll('.weight').forEach(slider => {
+            slider.addEventListener('input', () => {
+                // Update the active slider's label first
+                updateWeightLabel(slider);
+                // Then normalize and update other sliders
+                normalizeWeights(slider);
+                
+                // If info panel is active, update the current restaurant's display
+                if (infoPanel.classList.contains('active')) {
+                    const currentName = document.querySelector('.restaurant-name').textContent;
+                    const restaurant = restaurants.find(r => r.name === currentName);
+                    if (restaurant) {
+                        createRatingBars(restaurant.ratings);
+                    }
+                }
+            });
+        });
+
+        // Reset button functionality
+        document.querySelector('.reset-button').addEventListener('click', resetWeights);
+    </script>
+</body>
+</html>

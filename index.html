@@ -546,9 +546,11 @@
 
         // Function to create star rating HTML
         function createStarRating(score) {
-            const fullStars = Math.floor(score);
-            const partialStar = score % 1;
-            const emptyStars = 5 - Math.ceil(score);
+            // Round to nearest half-star to avoid small decimals showing as a half
+            const rounded = Math.round(score * 2) / 2;
+            const fullStars = Math.floor(rounded);
+            const partialStar = rounded % 1;
+            const emptyStars = 5 - Math.ceil(rounded);
             
             let html = '';
             // Full stars

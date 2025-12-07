@@ -519,6 +519,7 @@
         const menuButton = document.querySelector('.menu-button');
         const rankingPanel = document.querySelector('.ranking-panel');
         const rankingList = document.querySelector('.ranking-list');
+        const weightsPanel = document.querySelector('.weights-panel');
 
         // Helper to pull current slider weights
         function getCurrentWeights() {
@@ -542,6 +543,7 @@
             restaurantAddress.href = getGoogleMapsLink(restaurant);
             createRatingBars(restaurant.ratings);
             infoPanel.classList.add('active');
+            weightsPanel.classList.remove('active');
         }
 
         // Function to create star rating HTML
@@ -696,6 +698,7 @@
             if (e.originalEvent.target.id === 'map') {
                 infoPanel.classList.remove('active');
                 rankingPanel.classList.remove('active');
+                weightsPanel.classList.remove('active');
             }
         });
 
@@ -703,6 +706,7 @@
         menuButton.addEventListener('click', () => {
             const opening = !rankingPanel.classList.contains('active');
             rankingPanel.classList.toggle('active');
+            weightsPanel.classList.remove('active');
 
             if (opening) {
                 updateRankingList();
@@ -711,7 +715,6 @@
 
         // Settings button functionality
         const settingsButton = document.querySelector('.settings-button');
-        const weightsPanel = document.querySelector('.weights-panel');
         
         settingsButton.addEventListener('click', () => {
             weightsPanel.classList.toggle('active');

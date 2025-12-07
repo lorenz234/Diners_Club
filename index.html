@@ -536,6 +536,19 @@
             return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}`;
         }
 
+        // Center map with a vertical offset so the marker sits higher on screen
+        function focusRestaurantOnMap(restaurant, options = {}) {
+            const zoom = options.zoom || map.getZoom();
+            const offsetY = options.offsetY !== undefined
+                ? options.offsetY
+                : Math.min(map.getSize().y * 0.25, 220); // push view down so marker is upper-middle
+
+            const targetPoint = map.project(restaurant.coordinates, zoom).add([0, offsetY]);
+            const targetLatLng = map.unproject(targetPoint, zoom);
+
+            map.flyTo(targetLatLng, zoom, { duration: 0.6 });
+        }
+
         // Populate and show the info panel for a restaurant
         function showRestaurantDetails(restaurant) {
             restaurantName.textContent = restaurant.name;
@@ -669,7 +682,7 @@
                 `;
 
                 item.addEventListener('click', () => {
-                    map.flyTo(restaurant.coordinates, 15);
+                    focusRestaurantOnMap(restaurant, { zoom: 15 });
                     showRestaurantDetails(restaurant);
                     rankingPanel.classList.remove('active');
                 });
